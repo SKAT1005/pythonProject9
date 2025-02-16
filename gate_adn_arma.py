@@ -92,7 +92,10 @@ async def main_arma(phone, amount):
         n = driver.find_element(By.CLASS_NAME, 'statusRejected').text
         driver.find_element(By.XPATH,
                             '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
-        await send_file(n)
+        filename = await send_file(n)
+        if 'Документ не прошел проверку в ПС: Получатель не найден' in n :
+            await client.send_file(good_channel_id, open(filename, 'rb'), caption=f'❌{n}❌')
+            return filename, False
         sys.exit(0)
     except Exception as e:
         l = 1
@@ -106,7 +109,7 @@ async def main_arma(phone, amount):
                                     '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
                 file_name = await send_file()
                 driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/a[1]').click()
-                return file_name
+                return file_name, True
             except Exception as e:
                 time.sleep(6)
                 l += 1
@@ -237,7 +240,8 @@ async def gate():
                             file.write(f'{number}\n')
                             file.close()
                         await send_message(number=number, course=cource, phone=phone, summa=summa)
-                        receipt_name = await main_arma(phone=phone, amount=summa)
+                        receipt_name, status = await main_arma(phone=phone, amount=summa)
+
                         driver.switch_to.window(gate_window)
                         buttons = elem.find_elements(By.TAG_NAME, 'button')
                         buttons[0].click()

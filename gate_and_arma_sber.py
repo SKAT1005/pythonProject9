@@ -215,13 +215,13 @@ async def gate():
                         time.sleep(2)
                         cell = elem.find_elements(By.CLASS_NAME, 'ag-cell-not-inline-editing')
                         number = WebDriverWait(cell[0], 20).until(
-                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-dUHDFv'))).text
+                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-hEwMvu'))).text
                         summa = int(WebDriverWait(cell[2], 20).until(
-                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-dUHDFv'))).text[:-2])
+                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-hEwMvu'))).text[:-2])
                         phone = WebDriverWait(cell[3], 20).until(
-                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-dUHDFv'))).text.replace(' ', '')
+                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-hEwMvu'))).text.replace(' ', '')
                         dollar = float(WebDriverWait(cell[4], 20).until(
-                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-dUHDFv'))).text[:-5])
+                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-hEwMvu'))).text[:-5])
                         cource = round(summa/dollar, 2)
                         history = open('history.txt', 'r').readlines()
                         if f'{number}\n' in history or number == last_number:

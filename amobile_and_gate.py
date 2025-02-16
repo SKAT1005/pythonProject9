@@ -5,6 +5,7 @@ import os
 import sys
 import time
 
+from PIL import Image
 from selenium.webdriver.support import expected_conditions as EC
 import telethon
 from selenium import webdriver
@@ -13,7 +14,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.support.wait import WebDriverWait
 
 config = configparser.ConfigParser()
-config.read('gate.ini', encoding='utf-8')
+config.read('amobile_and_gate.ini', encoding='utf-8')
 
 username = config['amobile']['username']
 login_amobile = config['amobile']['login']
@@ -48,18 +49,6 @@ amobile_window = driver.window_handles[1]
 last_phone = ''
 
 
-async def send_file(n=1):
-    while True:
-        if glob.glob("*.pdf"):
-            break
-        time.sleep(1)
-    for file in glob.glob("*.pdf"):
-        if n == 1:
-            await client.send_file(good_channel_id, file, caption='✅Документ загружен удачно✅')
-            return file
-        else:
-            await client.send_file(bad_channel_id, file, caption=f'❌{n}❌')
-            return file
 
 
 async def main_amobile(phone, amount, bank):
@@ -67,24 +56,32 @@ async def main_amobile(phone, amount, bank):
     driver.switch_to.window(amobile_window)
     if bank == 'T-Банк (Тинькофф)':
         driver.get(t_bank_url)
-    else:
+    elif bank == 'Сбербанк':
         driver.get(sber_bank_url)
+    else:
+        await client.send_message(bad_channel_id, 'Неверный банк')
+        sys.exit(0)
     phone_input = WebDriverWait(driver, 50).until(
         EC.presence_of_element_located((By.ID,
                                         'payment_input_phone')))
     phone_input.clear()
-    phone_input.send_keys(phone)
+    for i in phone:
+        phone_input.send_keys(i)
     amount_input = WebDriverWait(driver, 50).until(
         EC.presence_of_element_located((By.ID,
                                         'payment_input_amount')))
     amount_input.clear()
     amount_input.send_keys(amount)
-    driver.find_element(By.NAME, 'button')
-    WebDriverWait(driver, 50).until(
-        EC.presence_of_element_located((By.ID,
-                                        'js-payment-confirm-btn'))).click()
-    WebDriverWait(driver, 50).until(
-        EC.presence_of_element_located((By.ID,
+    driver.find_element(By.NAME, 'button').click()
+    try:
+        WebDriverWait(driver, 50).until(
+            EC.presence_of_element_located((By.CLASS_NAME,
+                                            'js-payment-confirm-btn'))).click()
+    except Exception:
+        await client.send_message(bad_channel_id, 'Ошибка с отправкой чека')
+        sys.exit(0)
+    WebDriverWait(driver, 120).until(
+        EC.presence_of_element_located((By.CLASS_NAME,
                                         'swal2-confirm'))).click()
     for file in glob.glob("*.png"):
         os.remove(file)
@@ -96,14 +93,26 @@ async def main_amobile(phone, amount, bank):
     driver.execute_script("""var element = arguments[0];element.parentNode.removeChild(element);""", second)
     receipt = driver.find_element(By.CLASS_NAME, 'payment-success-content')
     driver.execute_script("arguments[0].scrollIntoView();", receipt)
-    receipt.screenshot('receipt.png')
+    while True:
+        receipt.screenshot('receipt.png')
+        img = Image.open('receipt.png')
+        img = img.convert("RGB")  # Convert to RGB, handling potential errors
+
+        pixel_color = img.getpixel((80, 60))
+        if pixel_color != (247,247,247):
+            os.remove('receipt.png')
+            time.sleep(2)
+        else:
+            await client.send_file(good_channel_id, open('receipt.png', 'rb'))
+            break
 
 
 async def activate_amobile():
     driver.switch_to.window(amobile_window)
     driver.find_element(By.CLASS_NAME, 'sign-in-btn').click()
     try:
-        driver.find_element(By.ID, 'sign-in__phone').send_keys(login_amobile)
+        for i in login_amobile:
+            driver.find_element(By.ID, 'sign-in__phone').send_keys(i)
         driver.find_element(By.CLASS_NAME, 'submit-btn').click()
         sms_code = input('Введите СМС код: ')
         driver.find_element(By.ID, "sign-up__sms").send_keys(sms_code)
@@ -132,8 +141,8 @@ async def send_message(number, phone, summa, course, bank):
            f'{summa}\n\n' \
            f'Номер сделки: {number}\n' \
            f'Курс: {course}\n' \
-           (f'{bot_text}\n'
-            f'{bank}')
+           f'{bot_text}\n' \
+           f'{bank}'
     await client.send_message(good_channel_id, text)
     time.sleep(1)
     await client.send_message(good_channel_id, '+')
@@ -164,7 +173,7 @@ async def gate():
                     )
                 except Exception as e:
                     driver.refresh()
-                    driver.switch_to.window(arma_window)
+                    driver.switch_to.window(amobile_window)
                     driver.refresh()
                     driver.switch_to.window(gate_window)
                     time.sleep(1)
