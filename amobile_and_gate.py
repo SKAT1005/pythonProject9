@@ -4,6 +4,7 @@ import glob
 import os
 import sys
 import time
+from timeit import default_repeat
 
 from PIL import Image
 from selenium.webdriver.support import expected_conditions as EC
@@ -78,6 +79,10 @@ async def main_amobile(phone, amount, bank):
             EC.presence_of_element_located((By.CLASS_NAME,
                                             'js-payment-confirm-btn'))).click()
     except Exception:
+        if driver.find_element(By.ID, 'swal2-content').text == 'Ошибка внешней системы.: (INVALID (103) - Receiver internal error)':
+            modal = driver.find_element(By.CLASS_NAME, 'swal2-modal')
+            modal.screenshot('receipt.png')
+            return False
         await client.send_message(bad_channel_id, 'Ошибка с отправкой чека')
         sys.exit(0)
     WebDriverWait(driver, 120).until(
@@ -104,7 +109,7 @@ async def main_amobile(phone, amount, bank):
             time.sleep(2)
         else:
             await client.send_file(good_channel_id, open('receipt.png', 'rb'))
-            break
+            return True
 
 
 async def activate_amobile():
@@ -206,14 +211,23 @@ async def gate():
                             file.write(f'{number}\n')
                             file.close()
                         await send_message(number=number, course=cource, phone=phone, summa=summa, bank=bank)
-                        await main_amobile(phone=phone, amount=summa, bank=bank)
+                        status = await main_amobile(phone=phone, amount=summa, bank=bank)
                         driver.switch_to.window(gate_window)
                         buttons = elem.find_elements(By.TAG_NAME, 'button')
-                        buttons[0].click()
-                        modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
-                        input_receipt = modal.find_element(By.TAG_NAME, 'input')
-                        input_receipt.send_keys(os.getcwd() + f"/receipt.png")
-                        modal.find_element(By.TAG_NAME, 'button').click()
+                        if status:
+                            buttons[0].click()
+                            modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
+                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt.send_keys(os.getcwd() + f"/receipt.png")
+                            modal.find_element(By.TAG_NAME, 'button').click()
+                        else:
+                            buttons[1].click()
+                            modal = driver.find_element(By.CLASS_NAME, 'sc-qZrbh')
+                            modal.find_element(By.CLASS_NAME, ' css-5xnqy3').click()
+                            modal.find_element(By.ID, 'react-select-5-option-7').click()
+                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt.send_keys(os.getcwd() + f"/receipt.png")
+                            modal.find_element(By.TAG_NAME, 'button').click()
                         try:
                             WebDriverWait(driver, 120).until(
                                 EC.staleness_of(driver.find_element(By.CLASS_NAME, 'huZpmV')))

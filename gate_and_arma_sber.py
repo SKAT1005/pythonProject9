@@ -88,8 +88,10 @@ async def main_arma_sber(phone, amount):
         n = driver.find_element(By.CLASS_NAME, 'statusRejected').text
         driver.find_element(By.XPATH,
                             '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
-        await send_file(n)
-        await client.send_message(bad_channel_id, f'❌{n}❌')
+        filename = await send_file(n)
+        if 'Документ не прошел проверку в ПС: Получатель не найден' in n:
+            await client.send_file(good_channel_id, open(filename, 'rb'), caption=f'❌{n}❌')
+            return filename, False
         sys.exit(0)
     except Exception as e:
         l = 1
@@ -103,7 +105,7 @@ async def main_arma_sber(phone, amount):
                                     '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
                 file_name = await send_file()
                 driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/a[1]').click()
-                return file_name
+                return file_name, True
             except Exception as e:
                 time.sleep(10)
                 l += 1
@@ -233,14 +235,23 @@ async def gate():
                             file.write(f'{number}\n')
                             file.close()
                         await send_message(number=number, course=cource, phone=phone, summa=summa)
-                        receipt_name = await main_arma_sber(phone=phone, amount=summa)
+                        receipt_name, status = await main_arma_sber(phone=phone, amount=summa)
                         driver.switch_to.window(gate_window)
                         buttons = elem.find_elements(By.TAG_NAME, 'button')
-                        buttons[0].click()
-                        modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
-                        input_receipt = modal.find_element(By.TAG_NAME, 'input')
-                        input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
-                        modal.find_element(By.TAG_NAME, 'button').click()
+                        if status:
+                            buttons[0].click()
+                            modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
+                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
+                            modal.find_element(By.TAG_NAME, 'button').click()
+                        else:
+                            buttons[1].click()
+                            modal = driver.find_element(By.CLASS_NAME, 'sc-qZrbh')
+                            modal.find_element(By.CLASS_NAME, ' css-5xnqy3').click()
+                            modal.find_element(By.ID, 'react-select-5-option-7').click()
+                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
+                            modal.find_element(By.TAG_NAME, 'button').click()
                         try:
                             WebDriverWait(driver, 120).until(
                                 EC.staleness_of(driver.find_element(By.CLASS_NAME, 'huZpmV')))

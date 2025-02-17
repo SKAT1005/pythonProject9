@@ -244,11 +244,20 @@ async def gate():
 
                         driver.switch_to.window(gate_window)
                         buttons = elem.find_elements(By.TAG_NAME, 'button')
-                        buttons[0].click()
-                        modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
-                        input_receipt = modal.find_element(By.TAG_NAME, 'input')
-                        input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
-                        modal.find_element(By.TAG_NAME, 'button').click()
+                        if status:
+                            buttons[0].click()
+                            modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
+                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
+                            modal.find_element(By.TAG_NAME, 'button').click()
+                        else:
+                            buttons[1].click()
+                            modal = driver.find_element(By.CLASS_NAME, 'sc-qZrbh')
+                            modal.find_element(By.CLASS_NAME, ' css-5xnqy3').click()
+                            modal.find_element(By.ID, 'react-select-5-option-7').click()
+                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
+                            modal.find_element(By.TAG_NAME, 'button').click()
                         try:
                             WebDriverWait(driver, 120).until(
                                 EC.staleness_of(driver.find_element(By.CLASS_NAME, 'huZpmV')))
