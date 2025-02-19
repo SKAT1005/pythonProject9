@@ -19,6 +19,7 @@ config.read('amobile_and_gate.ini', encoding='utf-8')
 
 username = config['amobile']['username']
 login_amobile = config['amobile']['login']
+password_amobile = config['amobile']['password']
 t_bank_url = config['amobile']['t_bank_url']
 sber_bank_url = config['amobile']['sber_bank_url']
 
@@ -79,7 +80,7 @@ async def main_amobile(phone, amount, bank):
             EC.presence_of_element_located((By.CLASS_NAME,
                                             'js-payment-confirm-btn'))).click()
     except Exception:
-        if driver.find_element(By.ID, 'swal2-content').text == 'Ошибка внешней системы.: (INVALID (103) - Receiver internal error)':
+        if 'ошибка внешней системы' in driver.find_element(By.ID, 'swal2-content').text.lower():
             modal = driver.find_element(By.CLASS_NAME, 'swal2-modal')
             modal.screenshot('receipt.png')
             return False
@@ -119,8 +120,8 @@ async def activate_amobile():
         for i in login_amobile:
             driver.find_element(By.ID, 'sign-in__phone').send_keys(i)
         driver.find_element(By.CLASS_NAME, 'submit-btn').click()
-        sms_code = input('Введите СМС код: ')
-        driver.find_element(By.ID, "sign-up__sms").send_keys(sms_code)
+        time.sleep(3)
+        driver.find_element(By.ID, "sign-up__sms").send_keys(password_amobile)
         driver.find_element(By.CLASS_NAME, 'submit-btn').click()
     except Exception as e:
         pass
@@ -222,8 +223,8 @@ async def gate():
                             modal.find_element(By.TAG_NAME, 'button').click()
                         else:
                             buttons[1].click()
-                            modal = driver.find_element(By.CLASS_NAME, 'sc-qZrbh')
-                            modal.find_element(By.CLASS_NAME, ' css-5xnqy3').click()
+                            modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
+                            modal.find_element(By.CLASS_NAME, 'css-181d4wa-container').click()
                             modal.find_element(By.ID, 'react-select-5-option-7').click()
                             input_receipt = modal.find_element(By.TAG_NAME, 'input')
                             input_receipt.send_keys(os.getcwd() + f"/receipt.png")

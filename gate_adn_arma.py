@@ -62,9 +62,7 @@ async def send_file(n=1):
 async def main_arma(phone, amount):
     global last_phone
     driver.switch_to.window(arma_window)
-    t_bank = driver.find_element(By.XPATH,
-                                 '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/div[2]/span[2]/a/div')  # Переход в тинькоф
-    t_bank.click()
+    driver.get('https://ibank.amra-bank.com/web_banking/protected/doc/payment/new/CATEGORY_EK_2/RCPT_EK_368')
     driver.find_element(By.NAME,
                         'AMOUNT').send_keys(
         amount)  # Ввод суммы
@@ -93,7 +91,7 @@ async def main_arma(phone, amount):
         driver.find_element(By.XPATH,
                             '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
         filename = await send_file(n)
-        if 'Документ не прошел проверку в ПС: Получатель не найден' in n :
+        if 'получатель не найден' in n.lower() :
             await client.send_file(good_channel_id, open(filename, 'rb'), caption=f'❌{n}❌')
             return filename, False
         sys.exit(0)
@@ -167,8 +165,7 @@ async def activate_gates():
         inputs[1].send_keys(password_gate)
         driver.find_element(By.CLASS_NAME, 'ewUpxh').click()
     except Exception as e:
-        with open('error.txt', 'a') as file:
-            file.write(f'{e}\n')
+        pass
     time.sleep(2)
     driver.get('https://panel.gate.cx/requests?page=1')
 
@@ -252,8 +249,8 @@ async def gate():
                             modal.find_element(By.TAG_NAME, 'button').click()
                         else:
                             buttons[1].click()
-                            modal = driver.find_element(By.CLASS_NAME, 'sc-qZrbh')
-                            modal.find_element(By.CLASS_NAME, ' css-5xnqy3').click()
+                            modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
+                            modal.find_element(By.CLASS_NAME, 'css-181d4wa-container').click()
                             modal.find_element(By.ID, 'react-select-5-option-7').click()
                             input_receipt = modal.find_element(By.TAG_NAME, 'input')
                             input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")

@@ -246,8 +246,8 @@ async def gate():
                             modal.find_element(By.TAG_NAME, 'button').click()
                         else:
                             buttons[1].click()
-                            modal = driver.find_element(By.CLASS_NAME, 'sc-qZrbh')
-                            modal.find_element(By.CLASS_NAME, ' css-5xnqy3').click()
+                            modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
+                            modal.find_element(By.CLASS_NAME, 'css-181d4wa-container').click()
                             modal.find_element(By.ID, 'react-select-5-option-7').click()
                             input_receipt = modal.find_element(By.TAG_NAME, 'input')
                             input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")

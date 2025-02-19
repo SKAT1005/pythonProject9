@@ -24,7 +24,7 @@ channel_id = int(config['telegram']['channel_id'])
 bot_token = config['telegram']['bot_token']
 
 
-gate_data = config['gate']['data'].split(',')
+gate_data = config['gate']['data'].split(', ')
 sleep_time = int(config['gate']['sleep_time'])
 username = config['gate']['username']
 
@@ -76,7 +76,7 @@ async def gate(login, password):
     actions.move_to_element_with_offset(canvas, xoffset=620, yoffset=0).perform()
     canvas.screenshot('122.png')
     await crop_image('122.png')
-    driver.find_element(By.CLASS_NAME, 'logout-button').click()
+    driver.find_element(By.CLASS_NAME, 'jgEkzf').click()
 async def main():
     client = telebot.TeleBot(bot_token)
     for i in gate_data:
@@ -84,8 +84,8 @@ async def main():
         await gate(login=login, password=password)
         client.send_photo(channel_id, open('122.png', 'rb'), caption=name)
         os.remove('122.png')
-        time.sleep(sleep_time)
     client.send_message(channel_id, '==============')
+    time.sleep(sleep_time)
 
 
 while True:
