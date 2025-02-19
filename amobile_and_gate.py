@@ -66,14 +66,28 @@ async def main_amobile(phone, amount, bank):
     phone_input = WebDriverWait(driver, 50).until(
         EC.presence_of_element_located((By.ID,
                                         'payment_input_phone')))
-    phone_input.clear()
-    for i in phone:
-        phone_input.send_keys(i)
-    amount_input = WebDriverWait(driver, 50).until(
-        EC.presence_of_element_located((By.ID,
-                                        'payment_input_amount')))
+    number = 0
+    while True:
+        phone_input.clear()
+        for i in phone:
+            phone_input.send_keys(i)
+        amount_input = WebDriverWait(driver, 50).until(
+            EC.presence_of_element_located((By.ID,
+                                            'payment_input_amount')))
+        if phone_input.get_attribute("value").replace(' (', '').replace(') ', '').replace('-', '-') == phone:
+            break
+        else:
+            if number == 3:
+                await client.send_message(bad_channel_id, 'Не могу ввести правильный номер телефона')
+                sys.exit(0)
+            number += 1
+            time.sleep(3)
     amount_input.clear()
-    amount_input.send_keys(amount)
+    for i in str(amount):
+        amount_input.send_keys(i)
+    if str(amount_input.get_attribute("value")) != str(amount):
+        await client.send_message(bad_channel_id, 'Не могу ввести правильную сумму')
+        sys.exit(0)
     driver.find_element(By.NAME, 'button').click()
     try:
         WebDriverWait(driver, 50).until(
