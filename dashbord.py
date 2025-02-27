@@ -77,6 +77,7 @@ async def gate(login, password):
     canvas.screenshot('122.png')
     await crop_image('122.png')
     driver.find_element(By.CLASS_NAME, 'jgEkzf').click()
+    driver.find_element(By.CLASS_NAME, 'dSJXSy').click()
 async def main():
     client = telebot.TeleBot(bot_token)
     for i in gate_data:

@@ -18,6 +18,8 @@ config.read('gate.ini', encoding='utf-8')
 username = config['arma']['username']
 login_arma = config['arma']['login']
 password_arma = config['arma']['password']
+t_bank_url = config['arma']['t_bank_url']
+sber_bank_url = config['arma']['sber_bank_url']
 
 login_gate = config['gate']['login']
 password_gate = config['gate']['password']
@@ -110,6 +112,57 @@ async def main_arma(phone, amount):
                 return file_name, True
             except Exception as e:
                 time.sleep(6)
+                l += 1
+                driver.refresh()
+
+
+async def main_arma_sber(phone, amount):
+    driver.switch_to.window(arma_window)
+    driver.get('https://ibank.amra-bank.com/web_banking/protected/doc/payment/new/CATEGORY_EK_2/RCPT_EK_1822')
+    WebDriverWait(driver, 50).until(EC.presence_of_element_located((By.NAME, 'AMOUNT'))).send_keys(amount)  # Ввод суммы
+    phone_input = driver.find_element(By.ID, 'TABLE:0:record_masked')
+    phone_input.clear()
+    phone_input.send_keys(str(phone)[2:])  # Ввод телефона для отправки
+    choose = driver.find_element(By.ID, 'dropdown_TABLE:1:enum1')
+    choose.click()
+    sber = choose.find_element(By.CLASS_NAME, 'select-list').find_elements(By.TAG_NAME, 'a')[1]
+    sber.click()
+    driver.find_element(By.CLASS_NAME, 'customCheckbox').click()  # Согласие с инфой
+
+    WebDriverWait(driver, 50).until(
+        EC.presence_of_element_located((By.ID, 'j_id_5z_c1:nextBtn'))).click()  # Переход далее
+    WebDriverWait(driver, 50).until(
+        EC.presence_of_element_located((By.ID, 'buttonsComponent:sendBtn'))).click()
+    time.sleep(2)
+    driver.find_element(By.XPATH,
+                        '/html/body/div[1]/div[1]/div[3]/div/div[1]/form/span/table/tbody/tr[1]').click()  # Переход в чек
+    for file in glob.glob("*.pdf"):
+        os.remove(file)
+    try:
+        driver.find_element(By.CLASS_NAME, 'statusRejected-img')
+        n = driver.find_element(By.CLASS_NAME, 'statusRejected').text
+        driver.find_element(By.XPATH,
+                            '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
+        filename = await send_file(n)
+        if 'Документ не прошел проверку в ПС: Получатель не найден' in n:
+            await client.send_file(good_channel_id, open(filename, 'rb'), caption=f'❌{n}❌')
+            return filename, False
+        sys.exit(0)
+    except Exception as e:
+        l = 1
+        while True:
+            if l == 60:
+                await client.send_message(bad_channel_id, f'⏳Документ слишком долго загружался⏳')
+                sys.exit(0)
+            try:
+                driver.find_element(By.CLASS_NAME, 'statusExecuted-img')
+                driver.find_element(By.XPATH,
+                                    '/html/body/div[1]/div[1]/div[3]/div/div[1]/form[2]/span[2]/input[2]').click()  # скачивание чека
+                file_name = await send_file()
+                driver.find_element(By.XPATH, '/html/body/div[1]/div[1]/div[2]/a[1]').click()
+                return file_name, True
+            except Exception as e:
+                time.sleep(10)
                 l += 1
                 driver.refresh()
 
@@ -226,6 +279,8 @@ async def gate():
                             EC.presence_of_element_located((By.CLASS_NAME, 'sc-hEwMvu'))).text.replace(' ', '')
                         dollar = float(WebDriverWait(cell[4], 20).until(
                             EC.presence_of_element_located((By.CLASS_NAME, 'sc-hEwMvu'))).text[:-5])
+                        bank = WebDriverWait(cell[3], 20).until(
+                            EC.presence_of_element_located((By.CLASS_NAME, 'sc-eFzpJt'))).text
                         cource = round(summa/dollar, 2)
                         history = open('history.txt', 'r').readlines()
                         if f'{number}\n' in history or number == last_number:
@@ -237,7 +292,10 @@ async def gate():
                             file.write(f'{number}\n')
                             file.close()
                         await send_message(number=number, course=cource, phone=phone, summa=summa)
-                        receipt_name, status = await main_arma(phone=phone, amount=summa)
+                        if bank == 'T-Банк (Тинькофф)':
+                            receipt_name, status = await main_arma(phone=phone, amount=summa)
+                        elif bank == 'Сбербанк':
+                            receipt_name, status = await main_arma_sber(phone=phone, amount=summa)
 
                         driver.switch_to.window(gate_window)
                         buttons = elem.find_elements(By.TAG_NAME, 'button')
@@ -252,7 +310,7 @@ async def gate():
                             modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
                             modal.find_element(By.CLASS_NAME, 'css-181d4wa-container').click()
                             modal.find_element(By.ID, 'react-select-5-option-7').click()
-                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt = modal.find_elements(By.TAG_NAME, 'input')[-1]
                             input_receipt.send_keys(os.getcwd() + f"/{receipt_name}")
                             modal.find_element(By.TAG_NAME, 'button').click()
                         try:

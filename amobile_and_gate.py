@@ -74,7 +74,8 @@ async def main_amobile(phone, amount, bank):
         amount_input = WebDriverWait(driver, 50).until(
             EC.presence_of_element_located((By.ID,
                                             'payment_input_amount')))
-        if phone_input.get_attribute("value").replace(' (', '').replace(') ', '').replace('-', '-') == phone:
+        ph = phone_input.get_attribute("value").replace(' (', '').replace(') ', '').replace('-', '')
+        if ph == phone:
             break
         else:
             if number == 3:
@@ -90,13 +91,15 @@ async def main_amobile(phone, amount, bank):
         sys.exit(0)
     driver.find_element(By.NAME, 'button').click()
     try:
-        WebDriverWait(driver, 50).until(
+        WebDriverWait(driver, 20).until(
             EC.presence_of_element_located((By.CLASS_NAME,
                                             'js-payment-confirm-btn'))).click()
     except Exception:
-        if 'ошибка внешней системы' in driver.find_element(By.ID, 'swal2-content').text.lower():
+        content = driver.find_element(By.ID, 'swal2-content').text.lower()
+        if 'ошибка внешней системы' in content:
             modal = driver.find_element(By.CLASS_NAME, 'swal2-modal')
             modal.screenshot('receipt.png')
+            await client.send_message(bad_channel_id, 'Ошибка 102')
             return False
         await client.send_message(bad_channel_id, 'Ошибка с отправкой чека')
         sys.exit(0)
@@ -169,7 +172,7 @@ async def send_message(number, phone, summa, course, bank):
 
 
 async def gate():
-    await client.start(bot_token=bot_token)
+    #await client.start(bot_token=bot_token)
     await activate_gates()
     await activate_amobile()
     driver.switch_to.window(gate_window)
@@ -218,14 +221,14 @@ async def gate():
                         cource = round(summa / dollar, 2)
                         history = open('history.txt', 'r').readlines()
                         if f'{number}\n' in history or number == last_number:
-                            await client.send_message(bad_channel_id, 'Номер сделки повторился')
+                            #await client.send_message(bad_channel_id, 'Номер сделки повторился')
                             sys.exit(0)
                         else:
                             last_number = number
                             file = open('history.txt', 'a')
                             file.write(f'{number}\n')
                             file.close()
-                        await send_message(number=number, course=cource, phone=phone, summa=summa, bank=bank)
+                        #await send_message(number=number, course=cource, phone=phone, summa=summa, bank=bank)
                         status = await main_amobile(phone=phone, amount=summa, bank=bank)
                         driver.switch_to.window(gate_window)
                         buttons = elem.find_elements(By.TAG_NAME, 'button')
@@ -240,7 +243,7 @@ async def gate():
                             modal = driver.find_element(By.CLASS_NAME, 'huZpmV')
                             modal.find_element(By.CLASS_NAME, 'css-181d4wa-container').click()
                             modal.find_element(By.ID, 'react-select-5-option-7').click()
-                            input_receipt = modal.find_element(By.TAG_NAME, 'input')
+                            input_receipt = modal.find_elements(By.TAG_NAME, 'input')[-1]
                             input_receipt.send_keys(os.getcwd() + f"/receipt.png")
                             modal.find_element(By.TAG_NAME, 'button').click()
                         try:
